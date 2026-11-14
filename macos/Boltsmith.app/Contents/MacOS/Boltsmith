@@ -1,0 +1,21 @@
+#!/bin/bash
+# Boltsmith macOS launcher
+RES="$(cd "$(dirname "$0")/../Resources" && pwd)"
+LOG="$HOME/Library/Logs/Boltsmith.log"
+SUP="$HOME/Library/Application Support/Boltsmith"
+mkdir -p "$SUP" "$(dirname "$LOG")"
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+notify() { osascript -e "display notification \"$1\" with title \"Boltsmith\"" >/dev/null 2>&1; }
+if [ ! -f "$SUP/.ready" ]; then
+  notify "First start: downloading the CAD kernel, a few minutes… / Перший запуск: завантажую CAD-ядро, кілька хвилин…"
+fi
+if ! command -v uv >/dev/null 2>&1; then
+  curl -LsSf https://astral.sh/uv/install.sh | sh >>"$LOG" 2>&1
+  export PATH="$HOME/.local/bin:$PATH"
+fi
+echo "=== $(date) ===" >>"$LOG"
+if uv run --python 3.12 --with build123d==0.13.0 --with bd_warehouse==0.4.0 python "$RES/fastener_gui.py" >>"$LOG" 2>&1; then
+  touch "$SUP/.ready"
+else
+  osascript -e 'display alert "Boltsmith" message "Could not start. See ~/Library/Logs/Boltsmith.log"' >/dev/null 2>&1
+fi
